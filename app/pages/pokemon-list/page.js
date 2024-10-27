@@ -1,48 +1,84 @@
 'use client'
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-// export const metadata = {
-//     title: "Pokemon list page"
-// }
-export default async function Test({ params }) {
+
+export default async function PokemonList() {
+    const searchParams = useSearchParams();
+    const type = searchParams.get("type") || "";
+
     try {
-
-        //const pokemonId = params.id;
-        const pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/?offset=50&limit=50`).then(res =>
-            res.json());
-        const types = await fetch(`https://pokeapi.co/api/v2/type`).then(resT =>
-            resT.json());
-
-        async function handleChange(value) {
-            const sortedPokemons = await fetch(`https://pokeapi.co/api/v2/type/${value}`).then(resT =>
-                resT.json());
-            return sortedPokemons;
+        const typesResponse = await fetch(`https://pokeapi.co/api/v2/type`);
+        if (!typesResponse.ok) {
+            throw new Error("Wystąpił problem z pobieraniem typów Pokémonów.");
         }
+        const typesData = await typesResponse.json();
 
+        const fetchPokemon = async () => {
+            if (type) {
+                const typeResponse = await fetch(`https://pokeapi.co/api/v2/type/${type}`);
+                if (!typeResponse.ok) {
+                    throw new Error("Wystąpił problem z pobieraniem Pokémonów dla wybranego typu.");
+                }
+                const typeData = await typeResponse.json();
+                return typeData.pokemon.map(p => p.pokemon); // Lista Pokémonów dla wybranego typu
+            } else {
+                const response = await fetch("https://pokeapi.co/api/v2/pokemon/?offset=50&limit=50");
+                if (!response.ok) {
+                    throw new Error("Nie znaleziono danych Pokémonów.");
+                }
+                const data = await response.json();
+                return data.results;
+            }
+        };
+
+        const pokemonList = await fetchPokemon();
+
+
+        function handleChange(event) {
+            const selectedType = event.target.value;
+            if (selectedType === "all") {
+                window.location.href = "/pages/pokemon-list";
+            } else {
+                window.location.href = `/pages/pokemon-list?type=${selectedType}`;
+            }
+        }
 
         return (
             <section>
+                <h1><b>Lista Pokémonów:</b></h1>
 
-                <h1><b>Lista: </b></h1>
-                <select onChange={handleChange}>
+                <h2>Filtruj według typu:</h2>
+                <select value={type} onChange={handleChange}>
+                    <option value="all">Wszystkie typy</option>
                     {
-                        types.results.map((typeT, i) =>
-                            <option key={i} value={typeT.name}> {typeT.name} </option>)
+                        typesData.results.map((typeObj, i) => (
+                        <option key={i} value={typeObj.name}>{typeObj.name}</option>
+                    ))
                     }
                 </select>
+
                 <ul>
-                    {
-                        pokemon.results.map((pokemon2, i) =>
-                            <li key={i}> {pokemon2.name} </li>)
-                    }
+                    {pokemonList.map((pokemon, i) => {
+                        const id = pokemon.url.split("/").at(-2);
+                        return (
+                            <li key={i}>
+                                <Link href={`/pages/pokemon/${id}`}>
+                                    {pokemon.name}
+                                </Link>
+                            </li>
+                        );
+                    })}
                 </ul>
             </section>
         );
     } catch (error) {
-        console.log(error);
+        console.error("Błąd:", error.message);
+
         return (
             <section>
-                Brak
+                <p>{error.message || "Brak danych"}</p>
+                <Link href="/">Powrót na stronę główną</Link>
             </section>
-        )
+        );
     }
 }

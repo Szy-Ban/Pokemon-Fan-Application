@@ -1,29 +1,45 @@
 import Link from "next/link";
+
 export const metadata = {
-    title: "Pokemon ability page"
-}
+    title: "Pokemon ability details page"
+};
+
 export default async function Test({ params }) {
     try {
-    const pokemonId = params.id;
-    const pokemon = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonId}`).then(res =>
-        res.json());
-    return (
-        <section>
-            <h1>Umiejętności pokemona {pokemon.name} !</h1>
-            <ul>
+        const { id: pokemonId, abilityId } = params;
+        const abilityResponse = await fetch(`https://pokeapi.co/api/v2/ability/${abilityId}`);
+
+        if (!abilityResponse.ok) {
+            if (abilityResponse.status === 404) {
+                throw new Error("Nie znaleziono umiejętności.");
+            } else {
+                throw new Error("Wystąpił problem z pobieraniem danych umiejętności.");
+            }
+        }
+
+        const ability = await abilityResponse.json();
+
+        const englishEffect = ability.effect_entries.find(entry => entry.language.name === "en");
+
+        return (
+            <section>
+                <h1>Umiejętność: {ability.name}</h1>
                 {
-                    pokemon.abilities.map((ability, i) =>
-                        <li key={i}> {ability.ability.name} </li>)
+                    <p><b>Opis:</b> {englishEffect.effect}</p>
                 }
-            </ul>
-        </section>
-    );
+
+                {/*<Link href={`/pages/pokemon/${pokemonId}`}>Powrót do szczegółów Pokémona</Link> |{" "}*/}
+                {/*<Link href="/">Powrót na stronę główną</Link>*/}
+            </section>
+        );
     } catch (error) {
-    console.log(error);
-    return (
-        <section>
-            Brak skilla
-        </section>
-    )
-}
+        console.error("Błąd:", error.message);
+
+        return (
+            <section>
+                <p>{error.message || "Brak szczegółów umiejętności"}</p>
+                <Link href="/">Powrót na stronę główną</Link>
+            </section>
+        );
+    }
 }
