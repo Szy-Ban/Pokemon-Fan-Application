@@ -25,7 +25,6 @@ A web application for Pokémon fans, built with Next.js. This app allows users t
 
 - **/pages**: Contains pages for individual Pokémon, abilities, and lists with dynamic routing.
 - **/components**: Reusable components such as Pokémon cards, filters, and navigation elements.
-- **/utils**: Helper functions for handling API requests and data transformations.
 
 ## Future Enhancements
 
